@@ -1,6 +1,6 @@
 """K-Meal Scraping Package"""
 
-from .config import get_database_url, DATABASE_CONFIG
+from .config import get_database_url
 from .crawler import KoreatechMealCrawler
 from .models import MenuEntity, MealDB, User, MealMenuItem
 from .storage import MealStorage
@@ -12,7 +12,6 @@ __all__ = [
   "User",
   "MealMenuItem",
   "get_database_url",
-  "DATABASE_CONFIG",
   "KoreatechMealCrawler",
   "MealStorage"
 ]

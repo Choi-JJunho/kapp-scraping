@@ -24,6 +24,7 @@ class MealStorage:
   def initialize_database(self):
     """데이터베이스 연결 초기화"""
     database_url = get_database_url()
+    print(f"🔗 Attempting to connect to database: {database_url}")
     self.engine = create_engine(database_url, echo=False)
 
     # 테이블 생성 (존재하지 않는 경우)
@@ -144,12 +145,12 @@ class MealStorage:
 
     print(f"\n💾 Saving {len(menus)} menu entries to all formats...")
 
-    # Save to database
-    saved_count = self.save_to_database(menus)
-
     # Save to files
     self.save_to_csv(menus, "koreatech_meals_2025.csv")
     self.save_to_json(menus, "koreatech_meals_2025.json")
+
+    # Save to database
+    saved_count = self.save_to_database(menus)
 
     return saved_count
 

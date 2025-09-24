@@ -177,6 +177,13 @@ class KoreatechMealCrawler:
       def clean_text(text):
         return re.sub(r'\s+', ' ', text).strip() if text else ""
 
+      def safe_get_text(element, column_id):
+        """안전하게 텍스트를 추출하는 함수"""
+        col = element.find("Col", {"id": column_id})
+        if col is not None and col.text is not None:
+          return clean_text(col.text)
+        return ""
+
       def parse_dish_list(dish_text):
         if not dish_text: return []
         # Remove the trailing kcal and price lines
@@ -187,12 +194,12 @@ class KoreatechMealCrawler:
 
       # Use the correct column IDs from the ground truth response
       menu_entity = MenuEntity(
-          date=clean_text(row.find("Col", {"id": "EAT_DATE"}).text),
-          dining_time=clean_text(row.find("Col", {"id": "EAT_TYPE"}).text),
-          place=clean_text(row.find("Col", {"id": "RESTURANT"}).text),
-          price=clean_text(row.find("Col", {"id": "PRICE"}).text),
-          kcal=clean_text(row.find("Col", {"id": "KCAL"}).text),
-          menu=parse_dish_list(row.find("Col", {"id": "DISH"}).text)
+          date=safe_get_text(row, "EAT_DATE"),
+          dining_time=safe_get_text(row, "EAT_TYPE"),
+          place=safe_get_text(row, "RESTURANT"),
+          price=safe_get_text(row, "PRICE"),
+          kcal=safe_get_text(row, "KCAL"),
+          menu=parse_dish_list(safe_get_text(row, "DISH"))
       )
 
       logger.info(

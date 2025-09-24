@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """코리아텍 식단 크롤링 메인 실행 스크립트"""
+import argparse
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -17,6 +18,14 @@ from src.kmeal.utils import setup_logging
 
 def main():
   """메인 실행 함수"""
+  # 명령행 인자 파싱
+  parser = argparse.ArgumentParser(description='코리아텍 식단 크롤링')
+  parser.add_argument('--init', action='store_true',
+                     help='초기 데이터 수집 모드 (올해 1월 1일부터 한 달 후까지)')
+  parser.add_argument('--test', action='store_true',
+                     help='테스트 모드 (오늘 하루치만 스크래핑)')
+  args = parser.parse_args()
+
   # 로깅 설정
   logger = setup_logging()
 
@@ -35,53 +44,73 @@ def main():
 
   try:
     # 1. 크롤러 초기화 및 로그인
-    print("🔐 Starting authentication...")
+    print("🔐 인증을 시작합니다...")
     crawler = KoreatechMealCrawler(PORTAL_ID, PORTAL_PW, YOUR_IP_ADDRESS)
     crawler.portal_login()
 
     # 2. 날짜 범위 설정
-    start_date = datetime(2025, 1, 1)  # January 1, 2025
-    end_date = datetime(2025, 10, 1)  # October 1, 2025
+    today = datetime.now()
+
+    if args.init:
+      # 초기 데이터 수집: 올해 1월 1일부터 오늘로부터 한 달 후까지
+      start_date = datetime(today.year, 1, 1)
+      end_date = today + timedelta(days=30)
+      print("📅 초기 데이터 수집 모드")
+    elif args.test:
+      # 테스트 모드: 오늘 하루치만
+      start_date = today
+      end_date = today
+      print("📅 테스트 모드 (오늘 하루치만)")
+    else:
+      # 일반 모드: 오늘 기준 2주 전부터 2주 후까지
+      start_date = today - timedelta(weeks=2)
+      end_date = today + timedelta(weeks=2)
+      print("📅 일반 데이터 수집 모드")
 
     print(
-        f"\n📅 Fetching meal data from {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
-    print(f"📊 Total days to process: {(end_date - start_date).days + 1}")
+        f"\n📅 {start_date.strftime('%Y-%m-%d')}부터 {end_date.strftime('%Y-%m-%d')}까지 식단 데이터를 수집합니다")
+    print(f"📊 처리할 총 일수: {(end_date - start_date).days + 1}일")
 
     # 3. 사용자 확인
-    user_input = input(
-        "\nThis will take a long time. Continue? (y/N): ").strip().lower()
-    if user_input not in ['y', 'yes']:
-      print("Operation cancelled.")
-      return
+    if args.test:
+      print("\n🧪 테스트 모드: 자동으로 진행합니다.")
+    else:
+      user_input = input(
+          "\n시간이 오래 걸릴 수 있습니다. 계속하시겠습니까? (y/N): ").strip().lower()
+      if user_input not in ['y', 'yes']:
+        print("작업이 취소되었습니다.")
+        return
 
     # 4. 식단 정보 크롤링
-    print("\n🍽️ Starting meal data collection...")
+    print("\n🍽️ 식단 데이터 수집을 시작합니다...")
     all_meals = crawler.get_meals_for_date_range(start_date, end_date)
 
     # 5. 결과 저장
     if not all_meals:
-      print("\n❌ No meal data found for 2025.")
+      print("\n❌ 2025년 식단 데이터를 찾을 수 없습니다.")
     else:
-      print(f"\n✅ Successfully collected {len(all_meals)} meal entries!")
+      print(f"\n✅ 총 {len(all_meals)}개의 식단 정보를 성공적으로 수집했습니다!")
 
       # 저장소 초기화 및 저장
       storage = MealStorage()
-      saved_count = storage.save_all_formats(all_meals)
+      storage.save_all_formats(all_meals)
       storage.close()
 
       # 샘플 결과 출력
-      print(f"\n📋 Sample results (first 5 entries):")
+      print("\n📋 샘플 결과 (처음 5개 항목):")
       for menu in all_meals[:5]:
         print(f"  {menu}")
+        print(f"    - 가격: {menu.price} (타입: {type(menu.price)})")
+        print(f"    - 칼로리: {menu.kcal} (타입: {type(menu.kcal)})")
 
       if len(all_meals) > 5:
-        print(f"  ... and {len(all_meals) - 5} more entries")
+        print(f"  ... 그리고 {len(all_meals) - 5}개 더")
 
   except KeyboardInterrupt:
-    print("\n\n⏹️ Operation interrupted by user.")
+    print("\n\n⏹️ 사용자에 의해 작업이 중단되었습니다.")
   except Exception as e:
     logger.error(f"실행 중 오류 발생: {e}")
-    print(f"\n❌ An error occurred: {e}")
+    print(f"\n❌ 오류가 발생했습니다: {e}")
 
 
 if __name__ == "__main__":

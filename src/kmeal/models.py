@@ -4,7 +4,7 @@ import hashlib
 from datetime import datetime
 
 from sqlalchemy import Column, BigInteger, Date, String, Integer, \
-    DateTime, ForeignKey
+  DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -90,7 +90,7 @@ class MenuEntity:
 
     # 안전한 정수 변환 함수
     def safe_int_convert(value, default=0):
-      if value in ['NULL', 'null', '', '-', None]:
+      if value in ['NULL', 'null', '', '-', None, 'None']:
         return default
       try:
         # 콤마 제거 (예: "1,000" -> "1000")
