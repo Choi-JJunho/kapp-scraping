@@ -1,0 +1,3 @@
+[submodule "kapp-config"]
+	path = kapp-config
+	url = https://github.com/Choi-JJunho/kapp-config
