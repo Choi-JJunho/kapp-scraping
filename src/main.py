@@ -1,10 +1,25 @@
 #!/usr/bin/env python3
-"""코리아텍 식단 크롤링 메인 실행 스크립트"""
+"""코리아텍 식단 크롤링 메인 실행 스크립트.
+
+코리아텍 포털에서 식단 정보를 크롤링하여 데이터베이스와 파일로 저장합니다.
+
+실행 모드:
+  - 일반 모드: 오늘 기준 2주 전 ~ 2주 후 (총 29일)
+  - 초기화 모드 (--init): 올해 1월 1일 ~ 한 달 후
+  - 테스트 모드 (--test): 오늘 하루만
+
+사용 예시:
+  python src/main.py              # 일반 모드
+  python src/main.py --init       # 초기화 모드
+  python src/main.py --test       # 테스트 모드
+"""
+
 import argparse
 import os
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Optional
 
 from dotenv import load_dotenv
 
@@ -16,14 +31,42 @@ from src.kmeal.crawler import KoreatechMealCrawler
 from src.kmeal.storage import MealStorage
 from src.kmeal.utils import setup_logging
 
-def main():
-  """메인 실행 함수"""
+
+def main() -> None:
+  """메인 실행 함수.
+
+  명령행 인자를 파싱하고, 환경변수를 확인한 후,
+  크롤링 → 저장의 전체 프로세스를 실행합니다.
+
+  프로세스:
+    1. 명령행 인자 파싱 (--init, --test)
+    2. 로깅 시스템 초기화
+    3. 환경변수 확인 (PORTAL_ID, PORTAL_PW, YOUR_IP_ADDRESS)
+    4. 포털 로그인
+    5. 날짜 범위 설정
+    6. 식단 데이터 크롤링
+    7. 데이터 저장 (CSV, JSON, Database)
+    8. 결과 출력
+
+  Raises:
+    KeyboardInterrupt: 사용자가 Ctrl+C로 중단한 경우
+    Exception: 실행 중 발생한 기타 예외
+  """
   # 명령행 인자 파싱
-  parser = argparse.ArgumentParser(description='코리아텍 식단 크롤링')
-  parser.add_argument('--init', action='store_true',
-                     help='초기 데이터 수집 모드 (올해 1월 1일부터 한 달 후까지)')
-  parser.add_argument('--test', action='store_true',
-                     help='테스트 모드 (오늘 하루치만 스크래핑)')
+  parser = argparse.ArgumentParser(
+      description='코리아텍 식단 크롤링',
+      epilog='예시: python src/main.py --test'
+  )
+  parser.add_argument(
+      '--init',
+      action='store_true',
+      help='초기 데이터 수집 모드 (올해 1월 1일부터 한 달 후까지)'
+  )
+  parser.add_argument(
+      '--test',
+      action='store_true',
+      help='테스트 모드 (오늘 하루치만 스크래핑)'
+  )
   args = parser.parse_args()
 
   # 로깅 설정
